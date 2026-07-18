@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>What's Hot Today — Demand Arbitrage Scanner</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#10141C; --panel:#181E2A; --panel2:#1E2534; --line:#28303F;
+    --text:#E8EBF2; --muted:#8C96A8; --accent:#F5A623;
+    --green:#2FBF71; --amber:#F5A623; --red:#E23B3B;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--bg); color:var(--text); font-family:'Outfit',system-ui,sans-serif; min-height:100vh;}
+  .wrap{max-width:860px; margin:0 auto; padding:40px 20px 80px;}
+
+  header{margin-bottom:26px;}
+  .wordmark{font-weight:800; font-size:clamp(28px,5vw,42px); letter-spacing:-0.02em; line-height:1.05;}
+  .wordmark span{color:var(--accent);}
+  .tagline{font-size:15px; color:var(--muted); margin-top:8px;}
+
+  .keyrow{display:flex; gap:10px; margin-bottom:12px;}
+  .keyrow input{flex:1; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:11px 16px; color:var(--text); font-family:'Outfit',sans-serif; font-size:14px; outline:none;}
+  .keyrow input:focus{border-color:var(--accent);}
+  .keynote{font-size:12px; color:var(--muted); margin-bottom:18px;}
+  .keynote a{color:var(--accent); text-decoration:none;}
+
+  .searchrow{display:flex; gap:10px; margin-bottom:14px;}
+  .searchrow input{flex:1; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 16px; color:var(--text); font-family:'Outfit',sans-serif; font-size:16px; outline:none;}
+  .searchrow input:focus{border-color:var(--accent);}
+  .searchrow input::placeholder{color:var(--muted);}
+  .scanbtn{background:var(--accent); color:#10141C; border:none; border-radius:10px; padding:14px 28px; font-family:'Outfit',sans-serif; font-weight:800; font-size:16px; cursor:pointer;}
+  .scanbtn:hover{filter:brightness(1.08);}
+  .scanbtn:disabled{opacity:0.45; cursor:default;}
+  .scanbtn:focus-visible, .chip input:focus-visible + span{outline:2px solid var(--accent); outline-offset:2px;}
+
+  .filters{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:30px;}
+  .chip{cursor:pointer;}
+  .chip input{position:absolute; opacity:0;}
+  .chip span{display:inline-block; padding:8px 16px; border:1px solid var(--line); border-radius:999px; font-size:14px; color:var(--muted); transition:all .15s;}
+  .chip input:checked + span{border-color:var(--accent); color:var(--text); background:var(--panel2);}
+
+  .status{font-size:15px; color:var(--muted); padding:40px 0; text-align:center;}
+  .status .dot{display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--accent); margin-right:10px; animation:pulse 1s infinite;}
+  @keyframes pulse{50%{opacity:0.2;}}
+  .error{border:1px solid var(--red); border-radius:10px; padding:16px; font-size:14px; background:rgba(226,59,59,0.08); margin-top:10px;}
+
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:22px; margin-bottom:14px;}
+  .cardtop{display:flex; justify-content:space-between; align-items:flex-start; gap:14px; margin-bottom:6px;}
+  .pname{font-weight:800; font-size:20px; letter-spacing:-0.01em;}
+  .score{font-weight:800; font-size:28px; line-height:1; font-variant-numeric:tabular-nums;}
+  .score small{display:block; font-size:11px; font-weight:600; color:var(--muted); text-align:right; margin-top:3px;}
+  .why{font-size:15px; color:var(--muted); margin-bottom:14px; line-height:1.5;}
+
+  .heatbar{position:relative; height:10px; border-radius:5px; margin-bottom:16px;
+    background:linear-gradient(90deg, var(--red) 0%, var(--amber) 50%, var(--green) 100%);}
+  .notch{position:absolute; top:-4px; width:4px; height:18px; background:var(--text); border-radius:2px; box-shadow:0 0 0 2px var(--bg); transform:translateX(-50%);}
+
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; margin-bottom:14px;}
+  .stat{background:var(--panel2); border-radius:8px; padding:10px 12px;}
+  .stat b{font-size:15px; display:block; font-variant-numeric:tabular-nums;}
+  .stat i{font-style:normal; font-size:11px; font-weight:600; color:var(--muted);}
+
+  .notes p{font-size:14px; line-height:1.55; margin-bottom:6px;}
+  .notes b{color:var(--accent); font-weight:600; font-size:12px; margin-right:6px;}
+  .disclaimer{font-size:13px; color:var(--muted); margin-top:26px; line-height:1.6;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="wordmark">What's Hot <span>Today</span></div>
+    <div class="tagline">Demand arbitrage scanner — proven Amazon demand, open TikTok Shop gaps</div>
+  </header>
+
+  <div class="keyrow">
+    <input id="key" type="password" placeholder="Anthropic API key (only needed outside Claude — stays in your browser)" aria-label="API key">
+  </div>
+  <div class="keynote">Running this from GitHub or your own machine? Paste a key from <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a>. It's kept in memory only — never stored, never sent anywhere except Anthropic.</div>
+
+  <div class="searchrow">
+    <input id="q" type="text" placeholder="Category or product idea — leave blank for a broad scan" aria-label="Search">
+    <button class="scanbtn" id="go">Scan</button>
+  </div>
+
+  <div class="filters" id="filters">
+    <label class="chip"><input type="checkbox" value="sell price under $30" checked><span>Under $30</span></label>
+    <label class="chip"><input type="checkbox" value="sell price $30-60"><span>$30–60</span></label>
+    <label class="chip"><input type="checkbox" value="small and light to ship" checked><span>Ships small</span></label>
+    <label class="chip"><input type="checkbox" value="demonstrable in a 15 second video" checked><span>Demos in 15s</span></label>
+    <label class="chip"><input type="checkbox" value="evergreen, not seasonal"><span>Evergreen only</span></label>
+    <label class="chip"><input type="checkbox" value="no electronics or batteries"><span>No electronics</span></label>
+  </div>
+
+  <div id="out">
+    <div class="status">Enter a category or hit Scan for a broad sweep. Results are live web research, scored 0–100.</div>
+  </div>
+
+  <p class="disclaimer">Scores are directional, built from live web signals — not scraped sales data. Green ≥ 75: act. Amber 50–74: needs an angle. Red &lt; 50: skip. The scan ranks bets; your first 10 units settle them.</p>
+</div>
+
+<script>
+const out = document.getElementById('out');
+const btn = document.getElementById('go');
+const q = document.getElementById('q');
+
+const spin = ['Pulling demand signals','Checking TikTok saturation','Estimating margins','Scoring the field'];
+let spinTimer = null;
+
+function setLoading(on){
+  btn.disabled = on;
+  if(on){
+    let i = 0;
+    out.innerHTML = '<div class="status"><span class="dot"></span><span id="sp">'+spin[0]+'&hellip;</span></div>';
+    spinTimer = setInterval(()=>{ i=(i+1)%spin.length; const el=document.getElementById('sp'); if(el) el.textContent = spin[i]+'…'; }, 2600);
+  } else if(spinTimer){ clearInterval(spinTimer); spinTimer = null; }
+}
+
+function bandColor(s){ return s>=75 ? 'var(--green)' : s>=50 ? 'var(--amber)' : 'var(--red)'; }
+function bandLabel(s){ return s>=75 ? 'Green — act' : s>=50 ? 'Amber — watch' : 'Red — skip'; }
+function esc(t){ const d=document.createElement('div'); d.textContent=t==null?'':String(t); return d.innerHTML; }
+
+function render(products){
+  products.sort((a,b)=>(b.s||0)-(a.s||0));
+  out.innerHTML = products.map(p=>{
+    const s = Math.max(0, Math.min(100, Number(p.s)||0));
+    const b = p.b||{};
+    return `<div class="card">
+      <div class="cardtop">
+        <div class="pname">${esc(p.n)}</div>
+        <div class="score" style="color:${bandColor(s)}">${s}<small>${bandLabel(s)}</small></div>
+      </div>
+      <div class="why">${esc(p.w)}</div>
+      <div class="heatbar"><div class="notch" style="left:${100-s}%"></div></div>
+      <div class="grid">
+        <div class="stat"><b>$${esc(p.c)} &rarr; $${esc(p.p)}</b><i>Cost &rarr; sell</i></div>
+        <div class="stat"><b>${b.de??'–'}/30</b><i>Demand</i></div>
+        <div class="stat"><b>${b.ga??'–'}/25</b><i>TikTok gap</i></div>
+        <div class="stat"><b>${b.dm??'–'}/15</b><i>Demo</i></div>
+        <div class="stat"><b>${b.ma??'–'}/20</b><i>Margin</i></div>
+        <div class="stat"><b>${b.lo??'–'}/10</b><i>Logistics</i></div>
+      </div>
+      <div class="notes">
+        <p><b>Demand</b>${esc(p.d)}</p>
+        <p><b>Gap</b>${esc(p.g)}</p>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function scan(){
+  setLoading(true);
+  const cat = q.value.trim();
+  const key = document.getElementById('key').value.trim();
+  const filters = [...document.querySelectorAll('#filters input:checked')].map(c=>c.value);
+  const now = new Date().toLocaleString('en-US',{month:'long',year:'numeric'});
+
+  const prompt = `You are a product-arbitrage researcher. Use web search (current period: ${now}) to find products with PROVEN demand (Amazon bestsellers/movers, trend reports) that have a SUPPLY/CONTENT GAP on TikTok Shop. A product already saturated on TikTok scores LOW on gap even if demand is high.
+${cat ? 'Focus category: '+cat+'.' : 'Broad scan, any category.'}
+${filters.length ? 'Constraints: '+filters.join('; ')+'.' : ''}
+Score each 0-100: demand/30, tiktok gap/25, demonstrability in 15s video/15, margin (3x+ markup=20)/20, logistics/10.
+Respond with ONLY a JSON array, no prose, no markdown fences. Exactly 4 products, terse strings (under 20 words each):
+[{"n":"name","w":"one-line why","d":"demand evidence","g":"gap read","c":sourceCostUSD,"p":sellPriceUSD,"s":compositeScore,"b":{"de":n,"ga":n,"dm":n,"ma":n,"lo":n}}]`;
+
+  const headers = {'Content-Type':'application/json'};
+  if(key){
+    headers['x-api-key'] = key;
+    headers['anthropic-version'] = '2023-06-01';
+    headers['anthropic-dangerous-direct-browser-access'] = 'true';
+  }
+
+  try{
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers,
+      body:JSON.stringify({
+        model:'claude-sonnet-4-6',
+        max_tokens:1000,
+        messages:[{role:'user',content:prompt}],
+        tools:[{type:'web_search_20250305',name:'web_search'}]
+      })
+    });
+    const data = await res.json();
+    if(data.error) throw new Error(data.error.message||'API error — check your key if running outside Claude');
+    const text = (data.content||[]).filter(i=>i.type==='text').map(i=>i.text).join('\n');
+    const start = text.indexOf('['), end = text.lastIndexOf(']');
+    if(start===-1||end===-1) throw new Error('No results in response');
+    const products = JSON.parse(text.slice(start,end+1));
+    if(!products.length) throw new Error('Scan came back empty');
+    setLoading(false);
+    render(products);
+  }catch(err){
+    setLoading(false);
+    out.innerHTML = '<div class="error">Scan failed: '+esc(err.message)+'. Run it again — research calls occasionally time out mid-search.</div>';
+  }
+}
+
+btn.addEventListener('click', scan);
+q.addEventListener('keydown', e=>{ if(e.key==='Enter') scan(); });
+</script>
+</body>
+</html>
