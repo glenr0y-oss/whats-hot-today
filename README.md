@@ -48,5 +48,6 @@ Single-file vanilla HTML/CSS/JS — no framework, no build step, no backend.
 ---
 
 Built by G — Connecticut. Part of a portfolio exploring scoring systems and funnel logic applied to real markets
-All future updates and design tweaks will be included below
+**All future updates and design tweaks will be included below**
+
 (07-18-2026)-I have changed the font so its less robotic as well as added a dynamic selection for products.Ive included an expanded view that holds the three primary buttons that would be in use, currently placeheld by amazon, tiktok,and aliexpress but I am planning to make these plug and play for the websites the user desires.
