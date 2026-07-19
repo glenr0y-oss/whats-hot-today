@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>What's Hot Today — Demand Arbitrage Scanner</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#10141C; --panel:#181E2A; --panel2:#1E2534; --line:#28303F;
+    --text:#E8EBF2; --muted:#8C96A8; --accent:#F5A623;
+    --green:#2FBF71; --amber:#F5A623; --red:#E23B3B;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--bg); color:var(--text); font-family:'Outfit',system-ui,sans-serif; min-height:100vh;}
+  .wrap{max-width:860px; margin:0 auto; padding:40px 20px 80px;}
+
+  header{margin-bottom:26px;}
+  .wordmark{font-weight:800; font-size:clamp(28px,5vw,42px); letter-spacing:-0.02em; line-height:1.05;}
+  .wordmark span{color:var(--accent);}
+  .tagline{font-size:15px; color:var(--muted); margin-top:8px;}
+
+  .keyrow{display:flex; gap:10px; margin-bottom:12px;}
+  .keyrow input{flex:1; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:11px 16px; color:var(--text); font-family:'Outfit',sans-serif; font-size:14px; outline:none;}
+  .keyrow input:focus{border-color:var(--accent);}
+  .keynote{font-size:12px; color:var(--muted); margin-bottom:18px;}
+  .keynote a{color:var(--accent); text-decoration:none;}
+
+  .searchrow{display:flex; gap:10px; margin-bottom:14px;}
+  .searchrow input{flex:1; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 16px; color:var(--text); font-family:'Outfit',sans-serif; font-size:16px; outline:none;}
+  .searchrow input:focus{border-color:var(--accent);}
+  .searchrow input::placeholder{color:var(--muted);}
+  .scanbtn{background:var(--accent); color:#10141C; border:none; border-radius:10px; padding:14px 28px; font-family:'Outfit',sans-serif; font-weight:800; font-size:16px; cursor:pointer;}
+  .scanbtn:hover{filter:brightness(1.08);}
+  .scanbtn:disabled{opacity:0.45; cursor:default;}
+  .scanbtn:focus-visible, .chip input:focus-visible + span, .card:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  .filters{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:30px;}
+  .chip{cursor:pointer;}
+  .chip input{position:absolute; opacity:0;}
+  .chip span{display:inline-block; padding:8px 16px; border:1px solid var(--line); border-radius:999px; font-size:14px; color:var(--muted); transition:all .15s;}
+  .chip input:checked + span{border-color:var(--accent); color:var(--text); background:var(--panel2);}
+
+  .status{font-size:15px; color:var(--muted); padding:40px 0; text-align:center;}
+  .status .dot{display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--accent); margin-right:10px; animation:pulse 1s infinite;}
+  @keyframes pulse{50%{opacity:0.2;}}
+  .error{border:1px solid var(--red); border-radius:10px; padding:16px; font-size:14px; background:rgba(226,59,59,0.08); margin-top:10px;}
+
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:22px; margin-bottom:14px; cursor:pointer; transition:border-color .15s;}
+  .card:hover{border-color:#3A4557;}
+  .card.open{border-color:var(--accent); cursor:default;}
+  .cardtop{display:flex; justify-content:space-between; align-items:flex-start; gap:14px; margin-bottom:6px;}
+  .pname{font-weight:800; font-size:20px; letter-spacing:-0.01em;}
+  .chev{display:inline-block; margin-left:8px; font-size:13px; color:var(--muted); transition:transform .2s; font-weight:400;}
+  .card.open .chev{transform:rotate(180deg);}
+  .score{font-weight:800; font-size:28px; line-height:1; font-variant-numeric:tabular-nums;}
+  .score small{display:block; font-size:11px; font-weight:600; color:var(--muted); text-align:right; margin-top:3px;}
+  .why{font-size:15px; color:var(--muted); margin-bottom:14px; line-height:1.5;}
+  .hint{font-size:12px; color:var(--muted);}
+  .card.open .hint{display:none;}
+
+  .heatbar{position:relative; height:10px; border-radius:5px; margin-bottom:14px;
+    background:linear-gradient(90deg, var(--red) 0%, var(--amber) 50%, var(--green) 100%);}
+  .notch{position:absolute; top:-4px; width:4px; height:18px; background:var(--text); border-radius:2px; box-shadow:0 0 0 2px var(--bg); transform:translateX(-50%);}
+
+  .detail{display:none;}
+  .card.open .detail{display:block;}
+
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; margin-bottom:14px;}
+  .stat{background:var(--panel2); border-radius:8px; padding:10px 12px;}
+  .stat b{font-size:15px; display:block; font-variant-numeric:tabular-nums;}
+  .stat i{font-style:normal; font-size:11px; font-weight:600; color:var(--muted);}
+
+  .notes p{font-size:14px; line-height:1.55; margin-bottom:6px;}
+  .notes b{color:var(--accent); font-weight:600; font-size:12px; margin-right:6px;}
+  .loading-detail{color:var(--muted); font-size:13px;}
+  .loading-detail .dot{display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--accent); margin-right:8px; animation:pulse 1s infinite;}
+  .detail-error{color:var(--red); font-size:13px; line-height:1.5;}
+  .detail-error a{color:var(--accent); text-decoration:none; font-weight:600;}
+
+  .links{display:flex; flex-wrap:wrap; gap:8px; margin-top:14px;}
+  .links a{display:inline-block; padding:9px 16px; border:1px solid var(--line); border-radius:999px; font-size:13px; font-weight:600; color:var(--text); text-decoration:none; background:var(--panel2); transition:border-color .15s;}
+  .links a:hover{border-color:var(--accent);}
+
+  .disclaimer{font-size:13px; color:var(--muted); margin-top:26px; line-height:1.6;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="wordmark">What's Hot <span>Today</span></div>
+    <div class="tagline">Demand arbitrage scanner — proven Amazon demand, open TikTok Shop gaps</div>
+  </header>
+
+  <div class="keyrow">
+    <input id="key" type="password" placeholder="Anthropic API key (only needed outside Claude — stays in your browser)" aria-label="API key">
+  </div>
+  <div class="keynote">Running this from GitHub or your own machine? Paste a key from <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a>. It's kept in memory only — never stored, never sent anywhere except Anthropic.</div>
+
+  <div class="searchrow">
+    <input id="q" type="text" placeholder="Category or product idea — leave blank for a broad scan" aria-label="Search">
+    <button class="scanbtn" id="go">Scan</button>
+  </div>
+
+  <div class="filters" id="filters">
+    <label class="chip"><input type="checkbox" value="sell price under $30" checked><span>Under $30</span></label>
+    <label class="chip"><input type="checkbox" value="sell price $30-60"><span>$30–60</span></label>
+    <label class="chip"><input type="checkbox" value="small and light to ship" checked><span>Ships small</span></label>
+    <label class="chip"><input type="checkbox" value="demonstrable in a 15 second video" checked><span>Demos in 15s</span></label>
+    <label class="chip"><input type="checkbox" value="evergreen, not seasonal"><span>Evergreen only</span></label>
+    <label class="chip"><input type="checkbox" value="no electronics or batteries"><span>No electronics</span></label>
+  </div>
+
+  <div id="out">
+    <div class="status">Enter a category or hit Scan for a broad sweep. Results are live web research, scored 0–100. Click any result to expand it.</div>
+  </div>
+
+  <p class="disclaimer">Scores are directional, built from live web signals — not scraped sales data. Green ≥ 75: act. Amber 50–74: needs an angle. Red &lt; 50: skip. Product links open live searches on each platform — always current, never dead. The scan ranks bets; your first 10 units settle them.</p>
+</div>
+
+<script>
+const out = document.getElementById('out');
+const btn = document.getElementById('go');
+const q = document.getElementById('q');
+
+let currentProducts = [];
+
+const spin = ['Pulling demand signals','Checking TikTok saturation','Estimating margins','Scoring the field'];
+let spinTimer = null;
+
+function setLoading(on){
+  btn.disabled = on;
+  if(on){
+    let i = 0;
+    out.innerHTML = '<div class="status"><span class="dot"></span><span id="sp">'+spin[0]+'&hellip;</span></div>';
+    spinTimer = setInterval(()=>{ i=(i+1)%spin.length; const el=document.getElementById('sp'); if(el) el.textContent = spin[i]+'…'; }, 2600);
+  } else if(spinTimer){ clearInterval(spinTimer); spinTimer = null; }
+}
+
+function bandColor(s){ return s>=75 ? 'var(--green)' : s>=50 ? 'var(--amber)' : 'var(--red)'; }
+function bandLabel(s){ return s>=75 ? 'Green — act' : s>=50 ? 'Amber — watch' : 'Red — skip'; }
+function esc(t){ const d=document.createElement('div'); d.textContent=t==null?'':String(t); return d.innerHTML; }
+
+function productLinks(name){
+  const enc = encodeURIComponent(name);
+  const dash = name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  return `<div class="links">
+    <a href="https://www.amazon.com/s?k=${enc}" target="_blank" rel="noopener">Amazon &#8599;</a>
+    <a href="https://www.aliexpress.com/w/wholesale-${dash}.html" target="_blank" rel="noopener">AliExpress &#8599;</a>
+    <a href="https://www.tiktok.com/search?q=${enc}" target="_blank" rel="noopener">TikTok &#8599;</a>
+  </div>`;
+}
+
+function notesHTML(p){
+  return `<p><b>Demand</b>${esc(p.d)}</p>
+    <p><b>Gap</b>${esc(p.g)}</p>
+    <p><b>Video angle</b>${esc(p.a)}</p>
+    <p><b>Watch out</b>${esc(p.r)}</p>`;
+}
+
+function cardHTML(p, idx){
+  const s = Math.max(0, Math.min(100, Number(p.s)||0));
+  const b = p.b||{};
+  return `<div class="card" data-i="${idx}" role="button" tabindex="0" aria-expanded="false">
+    <div class="cardtop">
+      <div class="pname">${esc(p.n)}<span class="chev">&#9660;</span></div>
+      <div class="score" style="color:${bandColor(s)}">${s}<small>${bandLabel(s)}</small></div>
+    </div>
+    <div class="why">${esc(p.w)}</div>
+    <div class="heatbar"><div class="notch" style="left:${100-s}%"></div></div>
+    <div class="hint">Tap to expand — sourcing, shipping, video angle, links</div>
+    <div class="detail">
+      <div class="grid">
+        <div class="stat"><b>$${esc(p.c)} &rarr; $${esc(p.p)}</b><i>Cost &rarr; sell</i></div>
+        <div class="stat" data-field="sh"><b>${esc(p.sh)||'–'}</b><i>Shipping</i></div>
+        <div class="stat"><b>${b.de??'–'}/30</b><i>Demand</i></div>
+        <div class="stat"><b>${b.ga??'–'}/25</b><i>TikTok gap</i></div>
+        <div class="stat"><b>${b.dm??'–'}/15</b><i>Demo</i></div>
+        <div class="stat"><b>${b.ma??'–'}/20</b><i>Margin</i></div>
+        <div class="stat"><b>${b.lo??'–'}/10</b><i>Logistics</i></div>
+      </div>
+      <div class="notes" data-notes>
+        ${p.detailLoaded ? notesHTML(p) : '<p class="loading-detail"><span class="dot"></span>Loading sourcing details&hellip;</p>'}
+      </div>
+      ${productLinks(p.n)}
+    </div>
+  </div>`;
+}
+
+function render(products){
+  products.sort((a,b)=>(b.s||0)-(a.s||0));
+  currentProducts = products;
+  out.innerHTML = products.map((p,idx)=>cardHTML(p, idx)).join('');
+
+  out.querySelectorAll('.card').forEach(card=>{
+    const idx = Number(card.dataset.i);
+    const toggle = e=>{
+      if(e.target.closest('a')) return;
+      if(e.target.closest('[data-retry]')) return;
+      const open = card.classList.toggle('open');
+      card.setAttribute('aria-expanded', open);
+      if(open) loadDetail(idx);
+    };
+    card.addEventListener('click', toggle);
+    card.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggle(e);} });
+  });
+}
+
+// Delegated once — handles retry links even after a card's notes are swapped in place.
+out.addEventListener('click', e=>{
+  const retryEl = e.target.closest('[data-retry]');
+  if(!retryEl) return;
+  e.preventDefault();
+  e.stopPropagation();
+  loadDetail(Number(retryEl.dataset.retry), true);
+});
+
+// ---- Claude API plumbing ----
+
+// Claude.ai artifacts proxy fetch() through postMessage to the host frame —
+// AbortSignal isn't structured-cloneable, so it can never appear in fetch options
+// here. Timeout is a logical race against a timer instead of a real abort.
+function delay(ms, message){
+  return new Promise((_, reject)=>{
+    setTimeout(()=> reject(Object.assign(new Error(message), {name:'TimeoutError'})), ms);
+  });
+}
+
+async function callClaudeOnce(messages, maxTokens, key, timeoutMs){
+  const headers = {'Content-Type':'application/json'};
+  if(key){
+    headers['x-api-key'] = key;
+    headers['anthropic-version'] = '2023-06-01';
+    headers['anthropic-dangerous-direct-browser-access'] = 'true';
+  }
+  const requestPromise = fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers,
+    body: JSON.stringify({
+      model:'claude-sonnet-4-6',
+      max_tokens: maxTokens,
+      messages,
+      tools:[{type:'web_search_20250305',name:'web_search'}]
+    })
+  }).then(res=>res.json());
+
+  // Prevent an unhandled-rejection warning if this loses the race below.
+  requestPromise.catch(()=>{});
+
+  const data = await Promise.race([requestPromise, delay(timeoutMs, 'timed out')]);
+  if(data.error) throw new Error(data.error.message || 'API error — check your key if running outside Claude');
+  return data;
+}
+
+async function callClaudeWithRetry(messages, maxTokens, key, timeoutMs=90000){
+  try{
+    return await callClaudeOnce(messages, maxTokens, key, timeoutMs);
+  }catch(err){
+    if(err.name === 'TimeoutError'){
+      try{
+        return await callClaudeOnce(messages, maxTokens, key, timeoutMs);
+      }catch(err2){
+        if(err2.name === 'TimeoutError') throw new Error('Request timed out twice — the search is taking too long. Try a narrower category.');
+        throw err2;
+      }
+    }
+    throw err;
+  }
+}
+
+// Runs one full turn, following pause_turn continuations (capped) until end_turn.
+async function runConversation(initialPrompt, maxTokens, key){
+  let messages = [{role:'user', content: initialPrompt}];
+  let text = '';
+  let continuations = 0;
+  const maxContinuations = 3;
+
+  while(true){
+    const data = await callClaudeWithRetry(messages, maxTokens, key);
+    const textBlocks = (data.content||[]).filter(i=>i.type==='text').map(i=>i.text).join('\n');
+    text += (text && textBlocks ? '\n' : '') + textBlocks;
+
+    if(data.stop_reason === 'pause_turn' && continuations < maxContinuations){
+      messages = [...messages, {role:'assistant', content: data.content}];
+      continuations++;
+      continue;
+    }
+    if(data.stop_reason === 'max_tokens'){
+      throw new Error('Hit the response length limit mid-answer — try again or narrow the request.');
+    }
+    return text;
+  }
+}
+
+function describeError(err){
+  const msg = err.message || String(err);
+  if(/timed out/i.test(msg)) return 'Scan timed out: ' + esc(msg);
+  if(/No results|No detail|Unexpected token|JSON/i.test(msg)) return 'Couldn\'t parse the response: ' + esc(msg) + '. Usually means the answer got cut off mid-search — try again.';
+  return 'Scan failed: ' + esc(msg);
+}
+
+// ---- Scan (collapsed contract: n, w, c, p, s, b) ----
+
+async function scan(){
+  setLoading(true);
+  const cat = q.value.trim();
+  const key = document.getElementById('key').value.trim();
+  const filters = [...document.querySelectorAll('#filters input:checked')].map(c=>c.value);
+  const now = new Date().toLocaleString('en-US',{month:'long',year:'numeric'});
+
+  const prompt = `You are a product-arbitrage researcher. Use web search (current period: ${now}) to find products with PROVEN demand (Amazon bestsellers/movers, trend reports) that have a SUPPLY/CONTENT GAP on TikTok Shop. A product already saturated on TikTok scores LOW on gap even if demand is high. Use at most 2 web searches total.
+${cat ? 'Focus category: '+cat+'.' : 'Broad scan, any category.'}
+${filters.length ? 'Constraints: '+filters.join('; ')+'.' : ''}
+Score each 0-100: demand/30, tiktok gap/25, demonstrability in 15s video/15, margin (3x+ markup=20)/20, logistics/10.
+Respond with ONLY a JSON array, no prose, no markdown fences. Exactly 4 products, all strings under 12 words:
+[{"n":"name","w":"one-line why","c":sourceCostUSD,"p":sellPriceUSD,"s":compositeScore,"b":{"de":n,"ga":n,"dm":n,"ma":n,"lo":n}}]`;
+
+  try{
+    const text = await runConversation(prompt, 1500, key);
+    const start = text.indexOf('['), end = text.lastIndexOf(']');
+    if(start===-1||end===-1) throw new Error('No results in response');
+    const products = JSON.parse(text.slice(start,end+1)).map(p=>({...p, detailLoaded:false, detailLoading:false}));
+    if(!products.length) throw new Error('Scan came back empty');
+    setLoading(false);
+    render(products);
+  }catch(err){
+    setLoading(false);
+    out.innerHTML = '<div class="error">'+describeError(err)+'</div>';
+  }
+}
+
+// ---- Detail (per-product, on first expand: d, g, sh, a, r) ----
+
+async function fetchDetail(p, key){
+  const prompt = `You are a product-arbitrage researcher. Research sourcing and content angle for exactly one product: "${p.n}" (source cost ~$${p.c}, planned sell price ~$${p.p}). Use at most 1 web search, only if you need it.
+Respond with ONLY a JSON object, no prose, no markdown fences, all strings under 12 words:
+{"d":"demand evidence","g":"gap read","sh":"bulk ship estimate e.g. 2-3 wk","a":"15-sec video hook","r":"main risk"}`;
+
+  const text = await runConversation(prompt, 700, key);
+  const start = text.indexOf('{'), end = text.lastIndexOf('}');
+  if(start===-1||end===-1) throw new Error('No detail returned');
+  return JSON.parse(text.slice(start,end+1));
+}
+
+function loadDetail(idx, forceRetry){
+  const p = currentProducts[idx];
+  if(!p) return;
+  if(p.detailLoaded && !forceRetry) return;
+  if(p.detailLoading) return;
+
+  p.detailLoading = true;
+  const card = out.querySelector(`.card[data-i="${idx}"]`);
+  const notesEl = card && card.querySelector('[data-notes]');
+  if(notesEl) notesEl.innerHTML = '<p class="loading-detail"><span class="dot"></span>Loading sourcing details&hellip;</p>';
+
+  const key = document.getElementById('key').value.trim();
+  fetchDetail(p, key).then(detail=>{
+    Object.assign(p, detail);
+    p.detailLoaded = true;
+    p.detailLoading = false;
+    const card2 = out.querySelector(`.card[data-i="${idx}"]`);
+    if(!card2) return;
+    const notesEl2 = card2.querySelector('[data-notes]');
+    if(notesEl2) notesEl2.innerHTML = notesHTML(p);
+    const shEl = card2.querySelector('[data-field="sh"] b');
+    if(shEl) shEl.textContent = p.sh || '–';
+  }).catch(err=>{
+    p.detailLoading = false;
+    const card2 = out.querySelector(`.card[data-i="${idx}"]`);
+    if(!card2) return;
+    const notesEl2 = card2.querySelector('[data-notes]');
+    if(notesEl2) notesEl2.innerHTML = `<p class="detail-error">Couldn't load details: ${esc(err.message)}. <a href="#" data-retry="${idx}">Retry</a></p>`;
+  });
+}
+
+btn.addEventListener('click', scan);
+q.addEventListener('keydown', e=>{ if(e.key==='Enter') scan(); });
+</script>
+</body>
+</html>
