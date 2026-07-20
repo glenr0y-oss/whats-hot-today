@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>What's Hot Today — Demand Arbitrage Scanner</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#10141C; --panel:#181E2A; --panel2:#1E2534; --line:#28303F;
+    --text:#E8EBF2; --muted:#8C96A8; --accent:#F5A623;
+    --green:#2FBF71; --amber:#F5A623; --red:#E23B3B;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--bg); color:var(--text); font-family:'Outfit',system-ui,sans-serif; min-height:100vh;}
+  .wrap{max-width:860px; margin:0 auto; padding:40px 20px 80px;}
+
+  header{margin-bottom:26px;}
+  .wordmark{font-weight:800; font-size:clamp(28px,5vw,42px); letter-spacing:-0.02em; line-height:1.05;}
+  .wordmark span{color:var(--accent);}
+  .tagline{font-size:15px; color:var(--muted); margin-top:8px;}
+
+  .keyrow{display:flex; gap:10px; margin-bottom:12px;}
+  .keyrow input{flex:1; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:11px 16px; color:var(--text); font-family:'Outfit',sans-serif; font-size:14px; outline:none;}
+  .keyrow input:focus{border-color:var(--accent);}
+  .keynote{font-size:12px; color:var(--muted); margin-bottom:18px;}
+  .keynote a{color:var(--accent); text-decoration:none;}
+
+  .searchrow{display:flex; gap:10px; margin-bottom:14px;}
+  .searchrow input{flex:1; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px 16px; color:var(--text); font-family:'Outfit',sans-serif; font-size:16px; outline:none;}
+  .searchrow input:focus{border-color:var(--accent);}
+  .searchrow input::placeholder{color:var(--muted);}
+  .scanbtn{background:var(--accent); color:#10141C; border:none; border-radius:10px; padding:14px 28px; font-family:'Outfit',sans-serif; font-weight:800; font-size:16px; cursor:pointer;}
+  .scanbtn:hover{filter:brightness(1.08);}
+  .scanbtn:disabled{opacity:0.45; cursor:default;}
+  .scanbtn:focus-visible, .chip input:focus-visible + span, .card:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  .filters{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;}
+  .grouplabel{font-size:11px; font-weight:600; color:var(--muted); margin:4px 0 8px;}
+  .filters select{background:var(--panel); border:1px solid var(--line); border-radius:999px; padding:8px 14px; color:var(--text); font-family:'Outfit',sans-serif; font-size:14px; outline:none; cursor:pointer;}
+  .filters select:focus{border-color:var(--accent);}
+  .chip{cursor:pointer;}
+  .chip input{position:absolute; opacity:0;}
+  .chip span{display:inline-block; padding:8px 16px; border:1px solid var(--line); border-radius:999px; font-size:14px; color:var(--muted); transition:all .15s;}
+  .chip input:checked + span{border-color:var(--accent); color:var(--text); background:var(--panel2);}
+
+  .status{font-size:15px; color:var(--muted); padding:40px 0; text-align:center;}
+  .status .dot{display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--accent); margin-right:10px; animation:pulse 1s infinite;}
+  @keyframes pulse{50%{opacity:0.2;}}
+  .error{border:1px solid var(--red); border-radius:10px; padding:16px; font-size:14px; background:rgba(226,59,59,0.08); margin-top:10px;}
+
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:22px; margin-bottom:14px; cursor:pointer; transition:border-color .15s;}
+  .card:hover{border-color:#3A4557;}
+  .card.open{border-color:var(--accent); cursor:default;}
+  .cardtop{display:flex; justify-content:space-between; align-items:flex-start; gap:14px; margin-bottom:6px;}
+  .pname{font-weight:800; font-size:20px; letter-spacing:-0.01em;}
+  .chev{display:inline-block; margin-left:8px; font-size:13px; color:var(--muted); transition:transform .2s; font-weight:400;}
+  .card.open .chev{transform:rotate(180deg);}
+  .score{font-weight:800; font-size:28px; line-height:1; font-variant-numeric:tabular-nums;}
+  .score small{display:block; font-size:11px; font-weight:600; color:var(--muted); text-align:right; margin-top:3px;}
+  .why{font-size:15px; color:var(--muted); margin-bottom:14px; line-height:1.5;}
+  .hint{font-size:12px; color:var(--muted);}
+  .card.open .hint{display:none;}
+
+  .heatbar{position:relative; height:10px; border-radius:5px; margin-bottom:14px;
+    background:linear-gradient(90deg, var(--green) 0%, var(--amber) 50%, var(--red) 100%);}
+  .notch{position:absolute; top:-4px; width:4px; height:18px; background:var(--text); border-radius:2px; box-shadow:0 0 0 2px var(--bg); transform:translateX(-50%);}
+
+  .detail{display:none;}
+  .card.open .detail{display:block;}
+
+  .projector{background:var(--panel2); border-radius:10px; padding:14px 16px; margin-top:14px; cursor:default;}
+  .projector h4{font-size:12px; font-weight:600; color:var(--accent); margin-bottom:10px;}
+  .proj-inputs{display:grid; grid-template-columns:repeat(auto-fit,minmax(105px,1fr)); gap:8px; margin-bottom:12px;}
+  .proj-inputs label{display:block; font-size:10px; font-weight:600; color:var(--muted); margin-bottom:3px;}
+  .proj-inputs input{width:100%; background:var(--panel); border:1px solid var(--line); border-radius:7px; padding:7px 9px; color:var(--text); font-family:'Outfit',sans-serif; font-size:14px; outline:none; font-variant-numeric:tabular-nums;}
+  .proj-inputs input:focus{border-color:var(--accent);}
+  .waterfall{font-size:13px; line-height:1.9; font-variant-numeric:tabular-nums;}
+  .waterfall .row{display:flex; justify-content:space-between; color:var(--muted);}
+  .waterfall .row.total{color:var(--text); font-weight:600; border-top:1px solid var(--line); margin-top:4px; padding-top:6px; font-size:15px;}
+  .waterfall .row.breakeven{color:var(--text); font-weight:600;}
+  .waterfall .pos{color:var(--green);} .waterfall .neg{color:var(--red);}
+
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; margin-bottom:14px;}
+  .stat{background:var(--panel2); border-radius:8px; padding:10px 12px;}
+  .stat b{font-size:15px; display:block; font-variant-numeric:tabular-nums;}
+  .stat i{font-style:normal; font-size:11px; font-weight:600; color:var(--muted);}
+
+  .notes p{font-size:14px; line-height:1.55; margin-bottom:6px;}
+  .notes b{color:var(--accent); font-weight:600; font-size:12px; margin-right:6px;}
+  .loading-detail{color:var(--muted); font-size:13px;}
+  .loading-detail .dot{display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--accent); margin-right:8px; animation:pulse 1s infinite;}
+  .detail-error{color:var(--red); font-size:13px; line-height:1.5;}
+  .detail-error a{color:var(--accent); text-decoration:none; font-weight:600;}
+
+  .links{display:flex; flex-wrap:wrap; gap:8px; margin-top:14px;}
+  .links a{display:inline-block; padding:9px 16px; border:1px solid var(--line); border-radius:999px; font-size:13px; font-weight:600; color:var(--text); text-decoration:none; background:var(--panel2); transition:border-color .15s;}
+  .links a:hover{border-color:var(--accent);}
+
+  .disclaimer{font-size:13px; color:var(--muted); margin-top:26px; line-height:1.6;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="wordmark">What's Hot <span>Today</span></div>
+    <div class="tagline">Demand arbitrage scanner — proven Amazon demand, open TikTok Shop gaps</div>
+  </header>
+
+  <div class="keyrow">
+    <input id="key" type="password" placeholder="Anthropic API key (only needed outside Claude — stays in your browser)" aria-label="API key">
+  </div>
+  <div class="keynote">Running this from GitHub or your own machine? Paste a key from <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a>. It's kept in memory only — never stored, never sent anywhere except Anthropic.</div>
+
+  <div class="searchrow">
+    <input id="q" type="text" placeholder="Category or product idea — leave blank for a broad scan" aria-label="Search">
+    <button class="scanbtn" id="go">Scan</button>
+  </div>
+
+  <div class="filters" id="filters">
+    <label class="chip"><input type="checkbox" value="sell price under $30" checked><span>Under $30</span></label>
+    <label class="chip"><input type="checkbox" value="sell price $30-60"><span>$30–60</span></label>
+    <label class="chip"><input type="checkbox" value="small and light to ship" checked><span>Ships small</span></label>
+    <label class="chip"><input type="checkbox" value="demonstrable in a 15 second video" checked><span>Demos in 15s</span></label>
+    <label class="chip"><input type="checkbox" value="evergreen, not seasonal"><span>Evergreen only</span></label>
+    <label class="chip"><input type="checkbox" value="no electronics or batteries"><span>No electronics</span></label>
+  </div>
+
+  <div class="grouplabel">Sell within a niche &middot; keeps your shop one coherent identity</div>
+  <div class="filters">
+    <select id="niche" aria-label="Niche lock">
+      <option value="">Any niche</option>
+      <option>Home &amp; kitchen</option>
+      <option>Car &amp; auto</option>
+      <option>Pet</option>
+      <option>Beauty &amp; personal care</option>
+      <option>Gadgets &amp; tech</option>
+      <option>Cleaning</option>
+      <option>Outdoor &amp; garden</option>
+    </select>
+  </div>
+
+  <div class="grouplabel">My filming setup &middot; angles &amp; demo scores adapt to what you can actually shoot</div>
+  <div class="filters" id="setup">
+    <label class="chip"><input type="checkbox" value="kitchen"><span>Kitchen</span></label>
+    <label class="chip"><input type="checkbox" value="car"><span>Car</span></label>
+    <label class="chip"><input type="checkbox" value="pet"><span>Pet</span></label>
+    <label class="chip"><input type="checkbox" value="outdoor space"><span>Outdoor space</span></label>
+    <label class="chip"><input type="checkbox" value="desk/office setup"><span>Desk/office</span></label>
+    <label class="chip"><input type="checkbox" value="willing to appear on camera"><span>Face on camera OK</span></label>
+  </div>
+
+  <div id="out">
+    <div class="status">Enter a category or hit Scan for a broad sweep. Results are live web research, scored 0–100. Click any result to expand it.</div>
+  </div>
+
+  <p class="disclaimer">Scores are directional, built from live web signals — not scraped sales data. Green ≥ 75: act. Amber 50–74: needs an angle. Red &lt; 50: skip. Product links open live searches on each platform — always current, never dead. The scan ranks bets; your first 10 units settle them.</p>
+</div>
+
+<script>
+const out = document.getElementById('out');
+const btn = document.getElementById('go');
+const q = document.getElementById('q');
+
+let currentProducts = [];
+let scanGen = 0; // increments per scan; late async results from older generations are discarded
+
+const spin = ['Pulling demand signals','Checking TikTok saturation','Estimating margins','Scoring the field'];
+let spinTimer = null;
+
+function setLoading(on){
+  btn.disabled = on;
+  if(spinTimer){ clearInterval(spinTimer); spinTimer = null; }
+  if(on){
+    let i = 0;
+    out.innerHTML = '<div class="status"><span class="dot"></span><span id="sp">'+spin[0]+'&hellip;</span></div>';
+    spinTimer = setInterval(()=>{ i=(i+1)%spin.length; const el=document.getElementById('sp'); if(el) el.textContent = spin[i]+'…'; }, 2600);
+  }
+}
+
+function bandColor(s){ return s>=75 ? 'var(--green)' : s>=50 ? 'var(--amber)' : 'var(--red)'; }
+function bandLabel(s){ return s>=75 ? 'Green — act' : s>=50 ? 'Amber — watch' : 'Red — skip'; }
+function esc(t){ const d=document.createElement('div'); d.textContent=t==null?'':String(t); return d.innerHTML; }
+
+function productLinks(name){
+  const enc = encodeURIComponent(name);
+  const dash = name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  return `<div class="links">
+    <a href="https://www.amazon.com/s?k=${enc}" target="_blank" rel="noopener">Amazon &middot; verify demand &#8599;</a>
+    <a href="https://www.aliexpress.com/w/wholesale-${dash}.html" target="_blank" rel="noopener">AliExpress &middot; source small batch &#8599;</a>
+    <a href="https://www.alibaba.com/trade/search?SearchText=${enc}" target="_blank" rel="noopener">Alibaba &middot; wholesale 100+ &#8599;</a>
+    <a href="https://www.tiktok.com/search?q=${enc}" target="_blank" rel="noopener">TikTok &middot; check competition &#8599;</a>
+  </div>`;
+}
+
+// ---- Revenue projector (pure client-side math — no API calls) ----
+function num(v, fallback){ const n = parseFloat(String(v==null?'':v).replace(/[^0-9.]/g,'')); return isFinite(n) && n >= 0 ? n : fallback; }
+
+function projectorHTML(p, idx){
+  const price = num(p.p, 18), cogs = num(p.c, 3);
+  return `<div class="projector" data-proj="${idx}">
+    <h4>Project revenue</h4>
+    <p style="font-size:11px; color:var(--muted); margin:-4px 0 10px;">Cost/unit assumes bulk sourcing (AliExpress/Alibaba) — retail prices on Amazon are your sell-side ceiling, not your cost.</p>
+    <div class="proj-inputs">
+      <div><label>Sell price $</label><input data-k="price" type="number" min="0" step="0.5" value="${price}"></div>
+      <div><label>Units to offload</label><input data-k="units" type="number" min="1" step="1" value="50"></div>
+      <div><label>Bulk cost / unit $</label><input data-k="cogs" type="number" min="0" step="0.25" value="${cogs}"></div>
+      <div><label>Referral %</label><input data-k="ref" type="number" min="0" max="100" step="0.5" value="6"></div>
+      <div><label>Fulfillment $/unit</label><input data-k="ful" type="number" min="0" step="0.25" value="3.50"></div>
+      <div><label>Affiliate %</label><input data-k="aff" type="number" min="0" max="100" step="1" value="0"></div>
+    </div>
+    <div class="waterfall" data-waterfall></div>
+  </div>`;
+}
+
+function computeProjection(el){
+  const g = k => num(el.querySelector(`input[data-k="${k}"]`).value, 0);
+  const price = g('price'), units = Math.max(1, Math.round(g('units'))), cogs = g('cogs');
+  const refPct = g('ref')/100, ful = g('ful'), affPct = g('aff')/100;
+  const gross = price*units;
+  const inventory = cogs*units, referral = gross*refPct, fulfill = ful*units, affiliate = gross*affPct;
+  const net = gross - inventory - referral - fulfill - affiliate;
+  const contribution = price*(1 - refPct - affPct) - ful; // per-unit cash after platform costs
+  const breakeven = contribution > 0 ? Math.ceil(inventory/contribution) : null;
+  const f = v => '$' + v.toLocaleString('en-US',{minimumFractionDigits:2, maximumFractionDigits:2});
+  const wf = el.querySelector('[data-waterfall]');
+  wf.innerHTML = `
+    <div class="row"><span>Gross revenue (${units} × ${f(price)})</span><span>${f(gross)}</span></div>
+    <div class="row"><span>Inventory cost</span><span>&minus;${f(inventory)}</span></div>
+    <div class="row"><span>Referral fee (${(refPct*100).toFixed(1)}%)</span><span>&minus;${f(referral)}</span></div>
+    <div class="row"><span>Fulfillment</span><span>&minus;${f(fulfill)}</span></div>
+    ${affPct>0 ? `<div class="row"><span>Affiliate (${(affPct*100).toFixed(0)}%)</span><span>&minus;${f(affiliate)}</span></div>` : ''}
+    <div class="row total"><span>Net profit</span><span class="${net>=0?'pos':'neg'}">${f(net)}${gross>0?` (${(net/gross*100).toFixed(0)}%)`:''}</span></div>
+    <div class="row breakeven"><span>Breakeven</span><span>${breakeven===null ? '<span class="neg">never — costs exceed price</span>' : breakeven+' of '+units+' units'+(breakeven>units?' <span class="neg">(over plan)</span>':'')}</span></div>`;
+}
+
+function notesHTML(p){
+  return `<p><b>Demand</b>${esc(p.d)}</p>
+    <p><b>Gap</b>${esc(p.g)}</p>
+    <p><b>Video angle</b>${esc(p.a)}</p>
+    <p><b>Watch out</b>${esc(p.r)}</p>`;
+}
+
+function money(v){ return esc(String(v==null?'?':v).replace(/^\$/,'')); }
+
+function cardHTML(p, idx){
+  const s = Math.max(0, Math.min(100, Number(p.s)||0));
+  const b = p.b||{};
+  return `<div class="card" data-i="${idx}" role="button" tabindex="0" aria-expanded="false">
+    <div class="cardtop">
+      <div class="pname">${esc(p.n)}<span class="chev">&#9660;</span></div>
+      <div class="score" style="color:${bandColor(s)}">${s}<small>${bandLabel(s)}</small></div>
+    </div>
+    <div class="why">${esc(p.w)}</div>
+    <div class="heatbar"><div class="notch" style="left:${100-s}%"></div></div>
+    <div class="hint">Tap to expand — sourcing, shipping, video angle, links</div>
+    <div class="detail">
+      <div class="grid">
+        <div class="stat"><b>$${money(p.c)} &rarr; $${money(p.p)}</b><i>Cost &rarr; sell</i></div>
+        <div class="stat" data-field="sh"><b>${esc(p.sh)||'–'}</b><i>Shipping</i></div>
+        <div class="stat"><b>${b.de??'–'}/30</b><i>Demand</i></div>
+        <div class="stat"><b>${b.ga??'–'}/25</b><i>TikTok gap</i></div>
+        <div class="stat"><b>${b.dm??'–'}/15</b><i>Demo</i></div>
+        <div class="stat"><b>${b.ma??'–'}/20</b><i>Margin</i></div>
+        <div class="stat"><b>${b.lo??'–'}/10</b><i>Logistics</i></div>
+      </div>
+      <div class="notes" data-notes>
+        ${p.detailLoaded ? notesHTML(p) : '<p class="loading-detail"><span class="dot"></span>Loading sourcing details&hellip;</p>'}
+      </div>
+      ${projectorHTML(p, idx)}
+      ${productLinks(p.n)}
+    </div>
+  </div>`;
+}
+
+function render(products){
+  products.sort((a,b)=>(b.s||0)-(a.s||0));
+  currentProducts = products;
+  out.innerHTML = products.map((p,idx)=>cardHTML(p, idx)).join('');
+
+  out.querySelectorAll('.card').forEach(card=>{
+    const idx = Number(card.dataset.i);
+    const toggle = e=>{
+      if(e.target.closest('a')) return;
+      if(e.target.closest('[data-retry]')) return;
+      if(e.target.closest('.projector')) return;
+      const open = card.classList.toggle('open');
+      card.setAttribute('aria-expanded', open);
+      if(open) loadDetail(idx);
+    };
+    card.addEventListener('click', toggle);
+    card.addEventListener('keydown', e=>{ if(e.target.tagName==='INPUT') return; if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggle(e);} });
+    const proj = card.querySelector('.projector');
+    if(proj) computeProjection(proj);
+  });
+}
+
+// Delegated once — live recompute as projector inputs change.
+out.addEventListener('input', e=>{
+  const proj = e.target.closest('.projector');
+  if(proj) computeProjection(proj);
+});
+
+// Delegated once — handles retry links even after a card's notes are swapped in place.
+out.addEventListener('click', e=>{
+  const retryEl = e.target.closest('[data-retry]');
+  if(!retryEl) return;
+  e.preventDefault();
+  e.stopPropagation();
+  loadDetail(Number(retryEl.dataset.retry), true);
+});
+
+// ---- Claude API plumbing ----
+
+// Claude.ai artifacts proxy fetch() through postMessage to the host frame —
+// AbortSignal isn't structured-cloneable, so it can never appear in fetch options
+// here. Timeout is a logical race against a timer instead of a real abort.
+function delay(ms, message){
+  let timer;
+  const p = new Promise((_, reject)=>{
+    timer = setTimeout(()=> reject(Object.assign(new Error(message), {name:'TimeoutError'})), ms);
+  });
+  p.cancel = ()=> clearTimeout(timer);
+  p.catch(()=>{}); // mark handled so a late rejection never surfaces as an unhandled-rejection warning
+  return p;
+}
+
+async function callClaudeOnce(messages, maxTokens, key, timeoutMs){
+  const headers = {'Content-Type':'application/json'};
+  if(key){
+    headers['x-api-key'] = key;
+    headers['anthropic-version'] = '2023-06-01';
+    headers['anthropic-dangerous-direct-browser-access'] = 'true';
+  }
+  const requestPromise = fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers,
+    body: JSON.stringify({
+      model:'claude-sonnet-4-6',
+      max_tokens: maxTokens,
+      messages,
+      tools:[{type:'web_search_20250305',name:'web_search'}]
+    })
+  }).then(async res=>{
+    const raw = await res.text();
+    try{ return JSON.parse(raw); }
+    catch{
+      // Gateway/overload errors return HTML — report the real status, not a fake parse failure
+      throw new Error('API returned status '+res.status+' with a non-JSON body'+(res.status>=500||res.status===529?' — likely overloaded, try again shortly':''));
+    }
+  });
+
+  // Prevent an unhandled-rejection warning if this loses the race below.
+  requestPromise.catch(()=>{});
+
+  const timeout = delay(timeoutMs, 'timed out');
+  try{
+    const data = await Promise.race([requestPromise, timeout]);
+    if(data.error) throw new Error(data.error.message || 'API error — check your key if running outside Claude');
+    return data;
+  } finally {
+    timeout.cancel();
+  }
+}
+
+async function callClaudeWithRetry(messages, maxTokens, key, timeoutMs=90000){
+  try{
+    return await callClaudeOnce(messages, maxTokens, key, timeoutMs);
+  }catch(err){
+    if(err.name === 'TimeoutError'){
+      try{
+        return await callClaudeOnce(messages, maxTokens, key, timeoutMs);
+      }catch(err2){
+        if(err2.name === 'TimeoutError') throw new Error('Request timed out twice — the search is taking too long. Try a narrower category.');
+        throw err2;
+      }
+    }
+    throw err;
+  }
+}
+
+// Runs one full turn, following pause_turn continuations (capped) until end_turn.
+async function runConversation(initialPrompt, maxTokens, key){
+  let messages = [{role:'user', content: initialPrompt}];
+  let text = '';
+  let continuations = 0;
+  const maxContinuations = 3;
+
+  while(true){
+    const data = await callClaudeWithRetry(messages, maxTokens, key);
+    const textBlocks = (data.content||[]).filter(i=>i.type==='text').map(i=>i.text).join('\n');
+    text += (text && textBlocks ? '\n' : '') + textBlocks;
+
+    if(data.stop_reason === 'pause_turn' && continuations < maxContinuations){
+      messages = [...messages, {role:'assistant', content: data.content}];
+      continuations++;
+      continue;
+    }
+    if(data.stop_reason === 'max_tokens'){
+      throw new Error('Hit the response length limit mid-answer — try again or narrow the request.');
+    }
+    return text;
+  }
+}
+
+// pause_turn accumulation or trailing prose can surround the real JSON with
+// fragments that also parse (e.g. a stray "[1]" citation). Search candidate
+// slices until one is both parseable AND the right shape per `valid`.
+function extractJSON(text, open, close, valid){
+  let end = text.lastIndexOf(close);
+  while(end !== -1){
+    let start = text.indexOf(open);
+    while(start !== -1 && start < end){
+      let v, ok = false;
+      try{ v = JSON.parse(text.slice(start, end+1)); ok = true; }catch{}
+      if(ok && (!valid || valid(v))) return v;
+      start = text.indexOf(open, start+1);
+    }
+    end = text.lastIndexOf(close, end-1);
+  }
+  throw new Error('No parseable JSON in response');
+}
+
+function describeError(err){
+  const msg = err.message || String(err);
+  if(/timed out/i.test(msg)) return 'Scan timed out: ' + esc(msg);
+  if(/No results|No detail|Unexpected token|JSON/i.test(msg)) return 'Couldn\'t parse the response: ' + esc(msg) + '. Usually means the answer got cut off mid-search — try again.';
+  return 'Scan failed: ' + esc(msg);
+}
+
+// ---- Scan (collapsed contract: n, w, c, p, s, b) ----
+
+async function scan(){
+  if(btn.disabled) return; // Enter-key can't launch a second concurrent scan
+  scanGen++;
+  setLoading(true);
+  const cat = q.value.trim();
+  const key = document.getElementById('key').value.trim();
+  const filters = [...document.querySelectorAll('#filters input:checked')].map(c=>c.value);
+  const niche = document.getElementById('niche').value;
+  const setup = [...document.querySelectorAll('#setup input:checked')].map(c=>c.value);
+  const now = new Date().toLocaleString('en-US',{month:'long',year:'numeric'});
+
+  const prompt = `You are a product-arbitrage researcher. Use web search (current period: ${now}) to find products with PROVEN demand (Amazon bestsellers/movers, trend reports) that have a SUPPLY/CONTENT GAP on TikTok Shop. A product already saturated on TikTok scores LOW on gap even if demand is high. Use at most 2 web searches total.
+${cat ? 'Focus category: '+cat+'.' : 'Broad scan, any category.'}
+${niche ? 'Niche lock: ONLY '+niche+' products — the seller keeps one coherent shop identity.' : ''}
+${filters.length ? 'Constraints: '+filters.join('; ')+'.' : ''}
+${setup.length ? 'Seller filming setup: '+setup.join(', ')+'. Prefer products demonstrable with ONLY this setup; score demonstrability (dm) relative to it, not in the abstract.' : ''}
+Score each 0-100: demand/30, tiktok gap/25, demonstrability in 15s video/15, margin (3x+ markup=20)/20, logistics/10.
+Respond with ONLY a JSON array, no prose, no markdown fences. Exactly 4 products, all strings under 12 words:
+[{"n":"name","w":"one-line why","c":sourceCostUSD,"p":sellPriceUSD,"s":compositeScore,"b":{"de":n,"ga":n,"dm":n,"ma":n,"lo":n}}]`;
+
+  try{
+    const text = await runConversation(prompt, 1500, key);
+    const isProductArray = v => Array.isArray(v) && v.some(p => p && typeof p === 'object' && p.n);
+    const parsed = extractJSON(text, '[', ']', isProductArray);
+    const products = parsed
+      .filter(p => p && typeof p === 'object' && p.n)
+      .map(p=>({...p, detailLoaded:false, detailLoading:false}));
+    if(!products.length) throw new Error('Scan came back empty');
+    setLoading(false);
+    render(products);
+  }catch(err){
+    setLoading(false);
+    out.innerHTML = '<div class="error">'+describeError(err)+'</div>';
+  }
+}
+
+// ---- Detail (per-product, on first expand: d, g, sh, a, r) ----
+
+async function fetchDetail(p, key){
+  const setup = [...document.querySelectorAll('#setup input:checked')].map(c=>c.value);
+  const setupLine = setup.length
+    ? `Seller filming setup: ${setup.join(', ')}. The video hook "a" MUST be filmable with only this setup${setup.includes('willing to appear on camera') ? '' : '; seller does not appear on camera, so give a hands-and-product angle'}.`
+    : 'Filming setup unknown: the video hook "a" must need no special location, props, or on-camera face.';
+  const prompt = `You are a product-arbitrage researcher. Research sourcing and content angle for exactly one product: "${p.n}" (source cost ~$${p.c}, planned sell price ~$${p.p}). Use at most 1 web search, only if you need it.
+${setupLine}
+Respond with ONLY a JSON object, no prose, no markdown fences, all strings under 12 words:
+{"d":"demand evidence","g":"gap read","sh":"bulk ship estimate e.g. 2-3 wk","a":"15-sec video hook","r":"main risk"}`;
+
+  const text = await runConversation(prompt, 700, key);
+  return extractJSON(text, '{', '}', v => v && typeof v === 'object' && (v.d || v.g || v.a || v.r || v.sh));
+}
+
+function loadDetail(idx, forceRetry){
+  const p = currentProducts[idx];
+  if(!p) return;
+  if(p.detailLoaded && !forceRetry) return;
+  if(p.detailLoading) return;
+
+  p.detailLoading = true;
+  const gen = scanGen; // stamp this request with the scan it belongs to
+  const card = out.querySelector(`.card[data-i="${idx}"]`);
+  const notesEl = card && card.querySelector('[data-notes]');
+  if(notesEl) notesEl.innerHTML = '<p class="loading-detail"><span class="dot"></span>Loading sourcing details&hellip;</p>';
+
+  const key = document.getElementById('key').value.trim();
+  fetchDetail(p, key).then(detail=>{
+    p.detailLoading = false;
+    if(gen !== scanGen) return; // a newer scan replaced the cards — this answer is about a dead question
+    Object.assign(p, detail);
+    p.detailLoaded = true;
+    const card2 = out.querySelector(`.card[data-i="${idx}"]`);
+    if(!card2) return;
+    const notesEl2 = card2.querySelector('[data-notes]');
+    if(notesEl2) notesEl2.innerHTML = notesHTML(p);
+    const shEl = card2.querySelector('[data-field="sh"] b');
+    if(shEl) shEl.textContent = p.sh || '–';
+  }).catch(err=>{
+    p.detailLoading = false;
+    if(gen !== scanGen) return;
+    const card2 = out.querySelector(`.card[data-i="${idx}"]`);
+    if(!card2) return;
+    const notesEl2 = card2.querySelector('[data-notes]');
+    if(notesEl2) notesEl2.innerHTML = `<p class="detail-error">Couldn't load details: ${esc(err.message)}. <a href="#" data-retry="${idx}">Retry</a></p>`;
+  });
+}
+
+btn.addEventListener('click', scan);
+q.addEventListener('keydown', e=>{ if(e.key==='Enter') scan(); });
+</script>
+</body>
+</html>
